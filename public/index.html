@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FinSight</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --text: #172033;
+        --muted: #657089;
+        --line: #dfe5ef;
+        --accent: #0f766e;
+        --accent-dark: #115e59;
+        --user: #e8f5f3;
+        --assistant: #ffffff;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .app {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        max-width: 920px;
+        min-height: 100vh;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      header {
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 18px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 32px;
+        letter-spacing: 0;
+      }
+
+      .subtitle {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .chat {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 24px 0;
+        overflow-y: auto;
+      }
+
+      .message {
+        max-width: 82%;
+        padding: 14px 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        line-height: 1.55;
+        white-space: pre-wrap;
+      }
+
+      .assistant {
+        align-self: flex-start;
+        background: var(--assistant);
+      }
+
+      .user {
+        align-self: flex-end;
+        background: var(--user);
+        border-color: #bee3de;
+      }
+
+      .composer {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 10px;
+        border-top: 1px solid var(--line);
+        padding-top: 16px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 48px;
+        max-height: 140px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 13px 14px;
+        font: inherit;
+      }
+
+      button {
+        border: 0;
+        border-radius: 8px;
+        padding: 0 18px;
+        font: inherit;
+        font-weight: 650;
+        cursor: pointer;
+      }
+
+      .send {
+        background: var(--accent);
+        color: white;
+      }
+
+      .send:hover {
+        background: var(--accent-dark);
+      }
+
+      .clear {
+        background: #e7ebf2;
+        color: var(--text);
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      @media (max-width: 720px) {
+        .app {
+          padding: 18px;
+        }
+
+        .message {
+          max-width: 100%;
+        }
+
+        .composer {
+          grid-template-columns: 1fr;
+        }
+
+        button {
+          min-height: 44px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <h1>FinSight</h1>
+        <p class="subtitle">AI-powered Finance Knowledge Assistant</p>
+      </header>
+
+      <section class="chat" id="chat" aria-live="polite"></section>
+
+      <form class="composer" id="form">
+        <textarea id="message" placeholder="Ask a finance question..." required></textarea>
+        <button class="send" id="send" type="submit">Send</button>
+        <button class="clear" id="clear" type="button">Clear Chat</button>
+      </form>
+    </main>
+
+    <script>
+      const chat = document.querySelector("#chat");
+      const form = document.querySelector("#form");
+      const input = document.querySelector("#message");
+      const send = document.querySelector("#send");
+      const clear = document.querySelector("#clear");
+
+      const welcome = "Hi, I am FinSight. Ask me finance questions about markets, banking, accounting, investing concepts, valuation, risk, or personal finance education.";
+      const history = [{ role: "assistant", content: welcome }];
+
+      function render() {
+        chat.innerHTML = "";
+        for (const item of history) {
+          const bubble = document.createElement("article");
+          bubble.className = `message ${item.role}`;
+          bubble.textContent = item.content;
+          chat.appendChild(bubble);
+        }
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      async function askFinSight(message) {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || data.error || "Request failed.");
+        }
+        return data.reply;
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const message = input.value.trim();
+        if (!message) return;
+
+        history.push({ role: "user", content: message });
+        input.value = "";
+        send.disabled = true;
+        history.push({ role: "assistant", content: "FinSight is thinking..." });
+        render();
+
+        try {
+          history[history.length - 1].content = await askFinSight(message);
+        } catch (error) {
+          history[history.length - 1].content = `Sorry, I could not generate a response right now. Please check your API key, internet connection, and model configuration.\n\nTechnical detail: ${error.message}`;
+        } finally {
+          send.disabled = false;
+          input.focus();
+          render();
+        }
+      });
+
+      clear.addEventListener("click", () => {
+        history.splice(0, history.length, { role: "assistant", content: welcome });
+        render();
+      });
+
+      render();
+    </script>
+  </body>
+</html>

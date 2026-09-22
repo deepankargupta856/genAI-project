@@ -1,6 +1,8 @@
 # FinSight
 
-FinSight is a simple GenAI-powered Streamlit chatbot for educational finance questions.
+FinSight is a simple GenAI-powered finance chatbot for educational finance questions.
+It includes a Vercel-ready web interface and keeps the original Streamlit interface
+for local development.
 
 It answers only finance-related questions, including topics such as stock markets,
 mutual funds, bonds, banking, accounting basics, financial ratios, portfolio concepts,
@@ -20,7 +22,13 @@ market predictions.
 
 ```text
 .
-├── app.py
+├── streamlit_app.py
+├── api/
+│   └── chat.js
+├── public/
+│   └── index.html
+├── package.json
+├── vercel.json
 ├── finsight_llm.py
 ├── requirements.txt
 ├── .env
@@ -52,11 +60,22 @@ GROQ_MODEL=groq/compound-mini
 
 ## Run
 
+For the Streamlit version:
+
 ```bash
-streamlit run app.py
+streamlit run streamlit_app.py
 ```
 
 Then open the local Streamlit URL shown in your terminal.
+
+For Vercel, set these environment variables in the Vercel project settings:
+
+```text
+GROQ_API_KEY=your_real_groq_api_key_here
+GROQ_MODEL=groq/compound-mini
+```
+
+Then deploy the GitHub repository from Vercel.
 
 ## How It Works
 
